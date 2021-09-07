@@ -92,6 +92,8 @@
 
     export const toggleRecording = () => {
         recording = !recording
+        console.log("Recording " + recording)
+
     }
 
     setInterval(() => {
@@ -120,33 +122,80 @@
 </script>
 
 <main>
-  <Grid bind:items {cols} rowHeight={50} let:dataItem fillSpace={true}>
 
-    <audio loop
-           bind:this={looperKeyAudioState[dataItem.data.looperPad.name]}
-           bind:paused={looperKeyPausedState[dataItem.data.looperPad.name]}
-           src={dataItem.data.looperPad.audioSrcUrl}
-    >
-    </audio>
 
-    <div class="content {looperPadClickedState[dataItem.data.looperPad.name] ? 'greyout': ''}"
-         on:click={onLooperKeyClicked.bind(this,dataItem.data.looperPad.name )}
-         style="background-image: linear-gradient({dataItem.data.start}, {dataItem.data.end});"></div>
 
-  </Grid>
-  <Button outline rectangle small danger filled={recording} on:click={toggleRecording}>
-    {recording ? "Stop Recording" : "Start Recording"}
-  </Button>
+  <div class="container">
+    <div class="keypads">
+      <Grid bind:items {cols} rowHeight={50} let:dataItem fillSpace={true}>
 
-  <Button outline rectangle small filled={playing} on:click={togglePlaying}>
-    {playing ? "Stop" : "Play"}
-  </Button>
+        <audio loop
+               bind:this={looperKeyAudioState[dataItem.data.looperPad.name]}
+               bind:paused={looperKeyPausedState[dataItem.data.looperPad.name]}
+               src={dataItem.data.looperPad.audioSrcUrl}
+        >
+        </audio>
+
+        <div class="content {looperPadClickedState[dataItem.data.looperPad.name] ? 'greyout': ''}"
+             on:click={onLooperKeyClicked.bind(this,dataItem.data.looperPad.name )}
+             style="background-image: linear-gradient({dataItem.data.start}, {dataItem.data.end});"></div>
+
+      </Grid>
+    </div>
+    <div class="controls">
+
+
+          <div class="record">
+            <input on:click={toggleRecording} type="checkbox" id="btn"/>
+            <label for="btn"></label>
+            <div class="time">
+              <div class="h_m"></div>
+              <div class="s_ms"></div>
+            </div>
+
+          </div>
+          <div class="play" style="margin-left: 30%">
+            <Button outline rectangle small filled={playing} on:click={togglePlaying}>
+              {playing ? "Stop" : "Play"}
+            </Button>
+          </div>
+
+
+
+    </div>
+  </div>
 
 
 </main>
 
-<style>
+<style type="text/scss">
     @use 'theme.scss';
+    @import "./styles/record-button.scss";
+
+    .container {
+      display: grid;
+      grid-template-columns: 0.1fr 3.6fr 0.1fr;
+      grid-template-rows: 0.5fr 1.5fr 1fr;
+      gap: 0px 0px;
+      grid-template-areas:
+    ". controls ."
+    ". keypads ."
+    ". . .";
+    }
+    .keypads { grid-area: keypads; }
+    .controls {
+      display: grid;
+      grid-template-columns: 0.3fr 0.2fr 2.5fr;
+      grid-template-rows: 1fr 1fr 1fr;
+      gap: 0px 0px;
+      grid-template-areas:
+    ". . ."
+    "record play ."
+    ". . .";
+      grid-area: controls;
+    }
+    .record { grid-area: record; }
+    .play { grid-area: play; }
 
     .greyout {
         opacity: 0.4; /* Real browsers */
@@ -179,13 +228,6 @@
         padding: 1em;
         max-width: 240px;
         margin: 0 auto;
-    }
-
-    h1 {
-        color: #ff3e00;
-        text-transform: uppercase;
-        font-size: 4em;
-        font-weight: 100;
     }
 
     @media (min-width: 640px) {
