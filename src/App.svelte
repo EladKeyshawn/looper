@@ -6,21 +6,43 @@
 
     export const looperPads = [
         {
-            name: "pad1",
+            id: id(),
             audioSrcUrl: "/media/120_future_funk_beats_25.mp3",
         },
         {
-            name: "pad2",
+            id: id(),
             audioSrcUrl: "/media/120_stutter_breakbeats_16.mp3",
         },
         {
-            name: "pad3",
+            id: id(),
             audioSrcUrl: "/media/Bass Warwick heavy funk groove on E 120 BPM.mp3",
         },
         {
-            name: "pad4",
+            id: id(),
             audioSrcUrl: "/media/electric guitar coutry slide 120bpm - B.mp3",
-        }
+        },
+        {
+            id: id(),
+            audioSrcUrl: "/media/FUD_120_StompySlosh.mp3",
+        },
+        {
+            id: id(),
+            audioSrcUrl: "/media/GrooveB_120bpm_Tanggu.mp3",
+        },
+        {
+            id: id(),
+            audioSrcUrl: "/media/MazePolitics_120_Perc.mp3",
+        },
+        {
+            id: id(),
+            audioSrcUrl: "/media/PAS3GROOVE1.03B.mp3",
+        },
+        {
+            id: id(),
+            audioSrcUrl: "/media/SilentStar_120_Em_OrganSynth.mp3",
+        },
+
+
     ];
 
     export let looperPadClickedState = {};
@@ -32,8 +54,8 @@
     let recordingStart = 0
 
     for (const pad of looperPads) {
-        looperPadClickedState[pad.name] = false
-        looperKeyPausedState[pad.name] = true
+        looperPadClickedState[pad.id] = false
+        looperKeyPausedState[pad.id] = true
     }
 
     export const keyPadsWaitingToPlay = []
@@ -98,7 +120,7 @@
     const recordSnapshot = (overrideTimestamp) => {
         if (!recording) return
         recordingEvents.push({
-            timestamp: (overrideTimestamp  || performance.now()) - recordingStart,
+            timestamp: (overrideTimestamp || performance.now()) - recordingStart,
             playing,
             looperKeyPausedState,
             looperPadClickedState
@@ -123,7 +145,7 @@
         const start = performance.now()
 
         while (events.length) {
-            if(events[0].timestamp >= (performance.now() - start)) {
+            if (events[0].timestamp >= (performance.now() - start)) {
                 const event = events.shift()
                 console.log("load event")
                 console.log(event)
@@ -141,10 +163,8 @@
             const y = Math.ceil(Math.random() * 4) + 1;
 
             return {
-                16: gridHelp.item({x: (i * 2) % col, y: Math.floor(i / 6) * y, w: 3, h: 3}),
+                16: gridHelp.item({x: (i * 2) % col, y: Math.floor(i / 6) * y, w: 3, h: 3, fixed: true}),
                 id: id(),
-                fixed: true,
-                draggable: false,
                 data: {looperPad, start: randomHexColorCode(), end: randomHexColorCode()},
             };
         })
@@ -159,21 +179,22 @@
 <main>
 
 
-
   <div class="container">
     <div class="keypads">
       <Grid bind:items {cols} rowHeight={50} let:dataItem fillSpace={true}>
 
         <audio loop
-               bind:this={looperKeyAudioState[dataItem.data.looperPad.name]}
-               bind:paused={looperKeyPausedState[dataItem.data.looperPad.name]}
+               bind:this={looperKeyAudioState[dataItem.data.looperPad.id]}
+               bind:paused={looperKeyPausedState[dataItem.data.looperPad.id]}
                src={dataItem.data.looperPad.audioSrcUrl}
         >
         </audio>
 
-        <div class="content {looperPadClickedState[dataItem.data.looperPad.name] ? 'greyout': ''}"
-             on:click={onLooperKeyClicked.bind(this,dataItem.data.looperPad.name )}
-             style="background-image: linear-gradient({dataItem.data.start}, {dataItem.data.end});"></div>
+        <div class="content {looperPadClickedState[dataItem.data.looperPad.id] ? 'greyout': ''}"
+             on:click={onLooperKeyClicked.bind(this,dataItem.data.looperPad.id )}
+             style="background-image: linear-gradient({dataItem.data.start}, {dataItem.data.end});">
+          <h1 style="padding-top: 20%">{looperPadClickedState[dataItem.data.looperPad.id] ? 'Playing' : ''}</h1>
+        </div>
 
       </Grid>
     </div>
@@ -189,13 +210,13 @@
         </div>
 
       </div>
-      <div class="play"  style="margin-left: 120px">
+      <div class="play" style="margin-left: 120px">
         <Button rectangle small on:click={togglePlaying}>
           {playing ? "Stop" : "Play"}
         </Button>
       </div>
 
-      <div class="load"  style="margin-left: 20px">
+      <div class="load" style="margin-left: 20px">
         <Button rectangle small on:click={loadRecording}>
           Load
         </Button>
@@ -224,7 +245,9 @@
     ". . .";
   }
 
-  .keypads { grid-area: keypads; }
+  .keypads {
+    grid-area: keypads;
+  }
 
   .controls {
     display: grid;
@@ -235,12 +258,17 @@
     grid-area: controls;
   }
 
-  .play { grid-area: 2 / 1 / 3 / 3; }
+  .play {
+    grid-area: 2 / 1 / 3 / 3;
+  }
 
-  .record { grid-area: 2 / 2 / 3 / 3; }
+  .record {
+    grid-area: 2 / 2 / 3 / 3;
+  }
 
-  .load { grid-area: 2 / 3 / 3 / 4; }
-
+  .load {
+    grid-area: 2 / 3 / 3 / 4;
+  }
 
 
   .greyout {
