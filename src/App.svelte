@@ -23,32 +23,76 @@
 
     let looperPadClickedState = {};
     let looperKeyPausedState = {};
-    let looperKeyTimePointerState = {};
+    let looperKeyAudioState = {};
+    let looperKeyTimeState = {};
     let playing = false;
+    let audio = null;
+
     for (const pad of looperPads) {
         looperPadClickedState[pad.name] = false
         looperKeyPausedState[pad.name] = true
-        looperKeyTimePointerState[pad.name] = 0
+        looperKeyTimeState[pad.name] = 0
     }
 
-    const onLooperKeyClicked = (buttonId) => {
-        looperPadClickedState[buttonId] = !looperPadClickedState[buttonId];
-        // looperKeyTimePointerState[buttonId] = 0;
-        syncLooperKeysState();
+    const keyPadsWaitingToPlay = []
+
+    const onLooperKeyClicked = (keyPadId) => {
+        looperKeyAudioState[keyPadId].currentTime = 0
+        looperPadClickedState[keyPadId] = !looperPadClickedState[keyPadId];
+
+        if (looperPadClickedState[keyPadId]) {
+            console.log("Scheduling to resume: " + keyPadId)
+            keyPadsWaitingToPlay.push(keyPadId)
+        } else {
+            pauseKeyPad(keyPadId)
+        }
+
     };
 
-    const syncLooperKeysState = () => {
+
+    const pauseAll = () => {
         for (const key in looperKeyPausedState) {
-            looperKeyPausedState[key] = !(playing && looperPadClickedState[key]);
+            looperKeyPausedState[key] = true
         }
-        console.log("Playing: " + playing)
-        console.log(looperKeyPausedState)
-    };
+    }
+
+    const pauseKeyPad = (keyPadId) => {
+        looperKeyPausedState[keyPadId] = true
+    }
+
+    const tryResumeKeyPad = (keyPadId) => {
+        console.log("Trying to resume keyPad: " + keyPadId)
+        looperKeyPausedState[keyPadId] = !(playing && looperPadClickedState[keyPadId])
+    }
+
+    const tryResumeAllWaitingKeyPads = () => {
+        while (keyPadsWaitingToPlay.length) {
+            const keyPadId = keyPadsWaitingToPlay.pop()
+            tryResumeKeyPad(keyPadId)
+        }
+    }
+
+    const scheduleAllClickedKeyPadsForResume = () => {
+        for (const key in looperPadClickedState) {
+            keyPadsWaitingToPlay.push(key)
+        }
+    }
 
     const togglePlaying = () => {
         playing = !playing;
-        syncLooperKeysState();
+        if (!playing) {
+             pauseAll()
+        }
+        else {
+            scheduleAllClickedKeyPadsForResume()
+        }
+
     };
+
+    setInterval(() => {
+        console.log("Interval hit")
+        tryResumeAllWaitingKeyPads()
+    }, 5000)
 
 </script>
 
@@ -60,8 +104,8 @@
 
   {#each looperPads as looperPad}
     <audio loop
+           bind:this={looperKeyAudioState[looperPad.name]}
            bind:paused={looperKeyPausedState[looperPad.name]}
-           bind:currentTime={looperKeyTimePointerState[looperPad.name]}
            src={looperPad.audioSrcUrl}
            controls>
       <track kind="captions"/>
