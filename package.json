@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "sirv-cli": "^1.0.0",
-    "smelte": "^1.1.8"
+    "smelte": "^1.1.8",
+    "svelte-grid": "^5.0.1"
   }
 }

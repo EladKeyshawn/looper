@@ -1,8 +1,10 @@
 <script>
     import {Button} from "attractions";
+    import Grid from "svelte-grid";
+    import gridHelp from "svelte-grid/build/helper/index.mjs";
+    import {id, randomHexColorCode} from './utils'
 
-
-    const looperPads = [
+    export const looperPads = [
         {
             name: "pad1",
             audioSrcUrl: "/media/120_future_funk_beats_25.mp3",
@@ -21,22 +23,22 @@
         }
     ];
 
-    let looperPadClickedState = {};
-    let looperKeyPausedState = {};
-    let looperKeyAudioState = {};
-    let looperKeyTimeState = {};
-    let playing = false;
-    let audio = null;
+    export let looperPadClickedState = {};
+    export let looperKeyPausedState = {};
+    export let looperKeyAudioState = {};
+    export let playing = false;
+    export let recording = false;
 
     for (const pad of looperPads) {
         looperPadClickedState[pad.name] = false
         looperKeyPausedState[pad.name] = true
-        looperKeyTimeState[pad.name] = 0
     }
 
-    const keyPadsWaitingToPlay = []
+    export const keyPadsWaitingToPlay = []
 
-    const onLooperKeyClicked = (keyPadId) => {
+
+    export const onLooperKeyClicked = (keyPadId) => {
+        console.log("Clicked " + keyPadId)
         looperKeyAudioState[keyPadId].currentTime = 0
         looperPadClickedState[keyPadId] = !looperPadClickedState[keyPadId];
 
@@ -48,7 +50,6 @@
         }
 
     };
-
 
     const pauseAll = () => {
         for (const key in looperKeyPausedState) {
@@ -78,51 +79,96 @@
         }
     }
 
-    const togglePlaying = () => {
+    export const togglePlaying = () => {
         playing = !playing;
+
+        // playing = !playing;
         if (!playing) {
-             pauseAll()
-        }
-        else {
+            pauseAll()
+        } else {
             scheduleAllClickedKeyPadsForResume()
         }
 
     };
 
+    export const toggleRecording = () => {
+        recording = !recording
+    }
+
     setInterval(() => {
-        console.log("Interval hit")
         tryResumeAllWaitingKeyPads()
-    }, 5000)
+    }, 2000)
+
+    function generateLayout(col) {
+
+        return looperPads.map((looperPad, i) => {
+            const y = Math.ceil(Math.random() * 4) + 1;
+
+            return {
+                16: gridHelp.item({x: (i * 2) % col, y: Math.floor(i / 6) * y, w: 3, h: 3}),
+                id: id(),
+                fixed: true,
+                draggable: false,
+                data: {looperPad, start: randomHexColorCode(), end: randomHexColorCode()},
+            };
+        })
+    }
+
+    let cols = [[1287, 16]];
+    let items = gridHelp.adjust(generateLayout(16), 16);
+
 
 </script>
 
 <main>
+  <Grid bind:items {cols} rowHeight={50} let:dataItem fillSpace={true}>
 
+    <audio loop
+           bind:this={looperKeyAudioState[dataItem.data.looperPad.name]}
+           bind:paused={looperKeyPausedState[dataItem.data.looperPad.name]}
+           src={dataItem.data.looperPad.audioSrcUrl}
+           >
+      <track kind="captions"/>
+    </audio>
+
+    <div class="content" on:click={onLooperKeyClicked.bind(this,dataItem.data.looperPad.name )}
+         style="background-image: linear-gradient({dataItem.data.start}, {dataItem.data.end});"/>
+
+  </Grid>
+
+  <Button outline danger filled={recording} on:click={toggleRecording}>
+    {recording ? "Stop Recording" : "Start Recording"}
+  </Button>
   <Button outline filled={playing} on:click={togglePlaying}>
     {playing ? "stop" : "play"}
   </Button>
 
-  {#each looperPads as looperPad}
-    <audio loop
-           bind:this={looperKeyAudioState[looperPad.name]}
-           bind:paused={looperKeyPausedState[looperPad.name]}
-           src={looperPad.audioSrcUrl}
-           controls>
-      <track kind="captions"/>
-    </audio>
-
-    <div>
-      <Button
-        outline
-        on:click={onLooperKeyClicked.bind(this, looperPad.name)}
-        filled={looperPadClickedState[looperPad.name]}>
-        {looperPad.name}
-      </Button>
-    </div>
-  {/each}
 </main>
 
 <style>
+    @use 'theme.scss';
+    .content {
+        width: 100%;
+        height: 100%;
+        border-radius: 6px;
+    }
+
+    :global(body) {
+        overflow-y: scroll;
+    }
+
+    :global(.svlt-grid-resizer::after) {
+        border-color: white !important;
+    }
+
+    :global(.svlt-grid-shadow) {
+        border-radius: 6px;
+    }
+
+    :global(.svlt-grid-item) {
+        border-radius: 6px;
+    }
+
     main {
         text-align: center;
         padding: 1em;

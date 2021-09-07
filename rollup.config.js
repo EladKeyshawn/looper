@@ -5,8 +5,9 @@ import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
 import css from 'rollup-plugin-css-only';
 import sveltePreprocess from 'svelte-preprocess'
-import { scss, coffeescript, pug } from 'svelte-preprocess'
+const makeAttractionsImporter = require('attractions/importer.js');
 const production = !process.env.ROLLUP_WATCH;
+const path = require('path');
 
 function serve() {
 	let server;
@@ -39,14 +40,23 @@ export default {
 	},
 	plugins: [
 		svelte({
-			preprocess: sveltePreprocess({ /* options */ }),
+			preprocess: sveltePreprocess({
+				scss: {
+					importer: makeAttractionsImporter({
+						// specify the path to your theme file, relative to this file
+						themeFile: path.join(__dirname, 'public/css/theme.scss'),
+					}),
+					// not mandatory but nice to have for concise imports
+					includePaths: [path.join(__dirname, './public/css')],
+				},
+			}),
 
 			compilerOptions: {
 				// enable run-time checks when not in production
 				dev: !production
 			}
 		}),
-	
+
 		// we'll extract any component CSS out into
 		// a separate file - better for performance
 		css({ output: 'bundle.css' }),
