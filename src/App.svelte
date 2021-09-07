@@ -1,101 +1,101 @@
 <script>
-  import { Button } from "attractions";
+    import {Button} from "attractions";
 
 
-  const looperPads = [
-    {
-      name: "pad1",
-      audioSrcUrl: "/media/GrooveB_120bpm_Tanggu.mp3",
-    },
-    {
-      name: "pad2",
-      audioSrcUrl: "/media/GrooveB_120bpm_Tanggu.mp3",
-    },
-    {
-      name: "pad3",
-      audioSrcUrl: "/media/GrooveB_120bpm_Tanggu.mp3",
-    },
-    {
-      name: "pad4",
-      audioSrcUrl: "/media/GrooveB_120bpm_Tanggu.mp3",
+    const looperPads = [
+        {
+            name: "pad1",
+            audioSrcUrl: "/media/120_future_funk_beats_25.mp3",
+        },
+        {
+            name: "pad2",
+            audioSrcUrl: "/media/120_stutter_breakbeats_16.mp3",
+        },
+        {
+            name: "pad3",
+            audioSrcUrl: "/media/Bass Warwick heavy funk groove on E 120 BPM.mp3",
+        },
+        {
+            name: "pad4",
+            audioSrcUrl: "/media/electric guitar coutry slide 120bpm - B.mp3",
+        }
+    ];
+
+    let looperPadClickedState = {};
+    let looperKeyPausedState = {};
+    let looperKeyTimePointerState = {};
+    let playing = false;
+    for (const pad of looperPads) {
+        looperPadClickedState[pad.name] = false
+        looperKeyPausedState[pad.name] = true
+        looperKeyTimePointerState[pad.name] = 0
     }
-  ];
 
-  const buttonsState = {};
-  const looperKeyPausedState = {};
-  let playing = false;
+    const onLooperKeyClicked = (buttonId) => {
+        looperPadClickedState[buttonId] = !looperPadClickedState[buttonId];
+        // looperKeyTimePointerState[buttonId] = 0;
+        syncLooperKeysState();
+    };
 
-  for (const pad of looperPads) {
-	  buttonsState[pad.name] = false
-	  looperKeyPausedState[pad.name] = true
-  }
+    const syncLooperKeysState = () => {
+        for (const key in looperKeyPausedState) {
+            looperKeyPausedState[key] = !(playing && looperPadClickedState[key]);
+        }
+        console.log("Playing: " + playing)
+        console.log(looperKeyPausedState)
+    };
 
+    const togglePlaying = () => {
+        playing = !playing;
+        syncLooperKeysState();
+    };
 
-  const handleClick = (buttonId) => {
-    buttonsState[buttonId] = !buttonsState[buttonId];
-    syncLooperKeysState();
-  };
-
-  const syncLooperKeysState = () => {
-	  console.log(playing)
-	  console.log(looperKeyPausedState)
-    for (const key in looperKeyPausedState) {
-      looperKeyPausedState[key] = !(playing && buttonsState[key]);
-    }
-  };
-
-  const togglePlaying = () => {
-    playing = !playing;
-    syncLooperKeysState();
-  };
 </script>
 
 <main>
-  <!-- <h1>Hello {name}!</h1> -->
-  <!-- <Button outline disabled={buttonDisabled}>Tertiary button</Button> -->
 
   <Button outline filled={playing} on:click={togglePlaying}>
     {playing ? "stop" : "play"}
   </Button>
 
   {#each looperPads as looperPad}
-    <audio
-      bind:paused={looperKeyPausedState[looperPad.name]}
-      src={looperPad.audioSrcUrl}
-      controls
-    >
-      <track kind="captions" />
+    <audio loop
+           bind:paused={looperKeyPausedState[looperPad.name]}
+           bind:currentTime={looperKeyTimePointerState[looperPad.name]}
+           src={looperPad.audioSrcUrl}
+           controls>
+      <track kind="captions"/>
     </audio>
 
     <div>
       <Button
         outline
-        on:click={handleClick.bind(this, looperPad.name)}
-        filled={buttonsState[looperPad.name]}
-        >{looperPad.name}
+        on:click={onLooperKeyClicked.bind(this, looperPad.name)}
+        filled={looperPadClickedState[looperPad.name]}>
+        {looperPad.name}
       </Button>
     </div>
   {/each}
 </main>
 
 <style>
-  main {
-    text-align: center;
-    padding: 1em;
-    max-width: 240px;
-    margin: 0 auto;
-  }
-
-  h1 {
-    color: #ff3e00;
-    text-transform: uppercase;
-    font-size: 4em;
-    font-weight: 100;
-  }
-
-  @media (min-width: 640px) {
     main {
-      max-width: none;
+        text-align: center;
+        padding: 1em;
+        max-width: 240px;
+        margin: 0 auto;
     }
-  }
+
+    h1 {
+        color: #ff3e00;
+        text-transform: uppercase;
+        font-size: 4em;
+        font-weight: 100;
+    }
+
+    @media (min-width: 640px) {
+        main {
+            max-width: none;
+        }
+    }
 </style>
