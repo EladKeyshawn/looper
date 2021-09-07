@@ -82,7 +82,6 @@
     export const togglePlaying = () => {
         playing = !playing;
 
-        // playing = !playing;
         if (!playing) {
             pauseAll()
         } else {
@@ -127,26 +126,32 @@
            bind:this={looperKeyAudioState[dataItem.data.looperPad.name]}
            bind:paused={looperKeyPausedState[dataItem.data.looperPad.name]}
            src={dataItem.data.looperPad.audioSrcUrl}
-           >
-      <track kind="captions"/>
+    >
     </audio>
 
-    <div class="content" on:click={onLooperKeyClicked.bind(this,dataItem.data.looperPad.name )}
-         style="background-image: linear-gradient({dataItem.data.start}, {dataItem.data.end});"/>
+    <div class="content {looperPadClickedState[dataItem.data.looperPad.name] ? 'greyout': ''}"
+         on:click={onLooperKeyClicked.bind(this,dataItem.data.looperPad.name )}
+         style="background-image: linear-gradient({dataItem.data.start}, {dataItem.data.end});"></div>
 
   </Grid>
-
-  <Button outline danger filled={recording} on:click={toggleRecording}>
+  <Button outline rectangle small danger filled={recording} on:click={toggleRecording}>
     {recording ? "Stop Recording" : "Start Recording"}
   </Button>
-  <Button outline filled={playing} on:click={togglePlaying}>
-    {playing ? "stop" : "play"}
+
+  <Button outline rectangle small filled={playing} on:click={togglePlaying}>
+    {playing ? "Stop" : "Play"}
   </Button>
+
 
 </main>
 
 <style>
     @use 'theme.scss';
+
+    .greyout {
+        opacity: 0.4; /* Real browsers */
+    }
+
     .content {
         width: 100%;
         height: 100%;
