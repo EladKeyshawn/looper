@@ -28,6 +28,8 @@
     export let looperKeyAudioState = {};
     export let playing = false;
     export let recording = false;
+    let recordingEvents = null
+    let recordingStart = 0
 
     for (const pad of looperPads) {
         looperPadClickedState[pad.name] = false
@@ -38,6 +40,7 @@
 
 
     export const onLooperKeyClicked = (keyPadId) => {
+        const eventTimestamp = performance.now()
         console.log("Clicked " + keyPadId)
         looperKeyAudioState[keyPadId].currentTime = 0
         looperPadClickedState[keyPadId] = !looperPadClickedState[keyPadId];
@@ -49,6 +52,7 @@
             pauseKeyPad(keyPadId)
         }
 
+        recordSnapshot(eventTimestamp)
     };
 
     const pauseAll = () => {
@@ -70,6 +74,7 @@
         while (keyPadsWaitingToPlay.length) {
             const keyPadId = keyPadsWaitingToPlay.pop()
             tryResumeKeyPad(keyPadId)
+            recordSnapshot();
         }
     }
 
@@ -81,7 +86,7 @@
 
     export const togglePlaying = () => {
         playing = !playing;
-
+        recordSnapshot()
         if (!playing) {
             pauseAll()
         } else {
@@ -90,10 +95,40 @@
 
     };
 
+    const recordSnapshot = (overrideTimestamp) => {
+        if (!recording) return
+        recordingEvents.push({
+            timestamp: (overrideTimestamp  || performance.now()) - recordingStart,
+            playing,
+            looperKeyPausedState,
+            looperPadClickedState
+        })
+        console.log(recordingEvents)
+    }
+
+
     export const toggleRecording = () => {
         recording = !recording
         console.log("Recording " + recording)
+        if (recording) {
+            recordingStart = performance.now()
+            recordingEvents = []
+        } else {
+            localStorage.setItem('record', JSON.stringify(recordingEvents));
+        }
+    }
 
+    const loadRecording = () => {
+        const events = JSON.parse(localStorage.getItem('record'));
+        const start = performance.now()
+
+        while (events.length) {
+            if(events[0].timestamp >= (performance.now() - start)) {
+                const event = events.shift()
+                console.log("load event")
+                console.log(event)
+            }
+        }
     }
 
     setInterval(() => {
@@ -145,21 +180,26 @@
     <div class="controls">
 
 
-          <div class="record">
-            <input on:click={toggleRecording} type="checkbox" id="btn"/>
-            <label for="btn"></label>
-            <div class="time">
-              <div class="h_m"></div>
-              <div class="s_ms"></div>
-            </div>
+      <div class="record">
+        <input on:click={toggleRecording} type="checkbox" id="btn"/>
+        <label for="btn"></label>
+        <div class="time">
+          <div class="h_m"></div>
+          <div class="s_ms"></div>
+        </div>
 
-          </div>
-          <div class="play" style="margin-left: 30%">
-            <Button outline rectangle small filled={playing} on:click={togglePlaying}>
-              {playing ? "Stop" : "Play"}
-            </Button>
-          </div>
+      </div>
+      <div class="play"  style="margin-left: 120px">
+        <Button rectangle small on:click={togglePlaying}>
+          {playing ? "Stop" : "Play"}
+        </Button>
+      </div>
 
+      <div class="load"  style="margin-left: 20px">
+        <Button rectangle small on:click={loadRecording}>
+          Load
+        </Button>
+      </div>
 
 
     </div>
@@ -169,70 +209,76 @@
 </main>
 
 <style type="text/scss">
-    @use 'theme.scss';
-    @import "./styles/record-button.scss";
+  @use 'theme.scss';
+  @import "./styles/record-button.scss";
 
-    .container {
-      display: grid;
-      grid-template-columns: 0.1fr 3.6fr 0.1fr;
-      grid-template-rows: 0.5fr 1.5fr 1fr;
-      gap: 0px 0px;
-      grid-template-areas:
+  .container {
+    display: grid;
+    grid-template-columns: 0.1fr 4.3fr 0.1fr;
+    grid-template-rows: 0.3fr 1.7fr 1fr;
+    gap: 0px 0px;
+    grid-auto-flow: row;
+    grid-template-areas:
     ". controls ."
     ". keypads ."
     ". . .";
-    }
-    .keypads { grid-area: keypads; }
-    .controls {
-      display: grid;
-      grid-template-columns: 0.3fr 0.2fr 2.5fr;
-      grid-template-rows: 1fr 1fr 1fr;
-      gap: 0px 0px;
-      grid-template-areas:
-    ". . ."
-    "record play ."
-    ". . .";
-      grid-area: controls;
-    }
-    .record { grid-area: record; }
-    .play { grid-area: play; }
+  }
 
-    .greyout {
-        opacity: 0.4; /* Real browsers */
-    }
+  .keypads { grid-area: keypads; }
 
-    .content {
-        width: 100%;
-        height: 100%;
-        border-radius: 6px;
-    }
+  .controls {
+    display: grid;
+    grid-template-columns: 0.2fr 0.2fr 0.3fr 2fr;
+    grid-template-rows: 1fr 1.4fr 0.6fr;
+    gap: 0px 0px;
+    grid-auto-flow: row;
+    grid-area: controls;
+  }
 
-    :global(body) {
-        overflow-y: scroll;
-    }
+  .play { grid-area: 2 / 1 / 3 / 3; }
 
-    :global(.svlt-grid-resizer::after) {
-        border-color: white !important;
-    }
+  .record { grid-area: 2 / 2 / 3 / 3; }
 
-    :global(.svlt-grid-shadow) {
-        border-radius: 6px;
-    }
+  .load { grid-area: 2 / 3 / 3 / 4; }
 
-    :global(.svlt-grid-item) {
-        border-radius: 6px;
-    }
 
+
+  .greyout {
+    opacity: 0.4; /* Real browsers */
+  }
+
+  .content {
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
+  }
+
+  :global(body) {
+    overflow-y: scroll;
+  }
+
+  :global(.svlt-grid-resizer::after) {
+    border-color: white !important;
+  }
+
+  :global(.svlt-grid-shadow) {
+    border-radius: 6px;
+  }
+
+  :global(.svlt-grid-item) {
+    border-radius: 6px;
+  }
+
+  main {
+    text-align: center;
+    padding: 1em;
+    max-width: 240px;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 640px) {
     main {
-        text-align: center;
-        padding: 1em;
-        max-width: 240px;
-        margin: 0 auto;
+      max-width: none;
     }
-
-    @media (min-width: 640px) {
-        main {
-            max-width: none;
-        }
-    }
+  }
 </style>
