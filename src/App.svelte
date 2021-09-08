@@ -1,9 +1,11 @@
 <script>
-    import {Button} from "attractions";
     import Grid from "svelte-grid";
     import gridHelp from "svelte-grid/build/helper/index.mjs";
     import {id, randomHexColorCode} from './utils'
     import {Col, Row} from 'sveltestrap';
+    import PlayControl from "./PlayControl.svelte";
+    import {playing} from "./store";
+    import Record from "./Record.svelte";
 
     export const looperPads = [
         {
@@ -40,11 +42,6 @@
     export let looperPadClickedState = {};
     export let looperKeyPausedState = {};
     export let looperKeyAudioState = {};
-    export let playing = false;
-    export let recording = false;
-    let recordingEvents = null
-    let recordingStart = 0
-
 
     for (const looperIndex in looperPads) {
         looperPads[looperIndex].id = looperIndex
@@ -69,7 +66,7 @@
             pauseKeyPad(keyPadId)
         }
 
-        recordSnapshot(eventTimestamp)
+        // recordSnapshot(eventTimestamp)
     };
 
     const pauseAll = () => {
@@ -77,6 +74,13 @@
             looperKeyPausedState[key] = true
         }
     }
+    playing.subscribe((value => {
+        if (!value) {
+            pauseAll()
+        } else {
+            scheduleAllClickedKeyPadsForResume()
+        }
+    }))
 
     const pauseKeyPad = (keyPadId) => {
         looperKeyPausedState[keyPadId] = true
@@ -91,7 +95,7 @@
         while (keyPadsWaitingToPlay.length) {
             const keyPadId = keyPadsWaitingToPlay.pop()
             tryResumeKeyPad(keyPadId)
-            recordSnapshot();
+            // recordSnapshot();
         }
     }
 
@@ -100,70 +104,6 @@
             keyPadsWaitingToPlay.push(key)
         }
     }
-
-    export const togglePlaying = (value) => {
-        console.log("toggling playing")
-        playing = value instanceof Boolean? value : !playing;
-        recordSnapshot()
-        if (!playing) {
-            pauseAll()
-        } else {
-            scheduleAllClickedKeyPadsForResume()
-        }
-
-    };
-
-    const recordSnapshot = (overrideTimestamp) => {
-        if (!recording) return
-        recordingEvents.push({
-            timestamp: (overrideTimestamp || performance.now()) - recordingStart,
-            playing,
-            looperKeyPausedState,
-            looperPadClickedState
-        })
-        console.log(recordingEvents)
-    }
-
-
-    export const toggleRecording = () => {
-        recording = !recording
-        console.log("Recording " + recording)
-        if (recording) {
-            recordingStart = performance.now()
-            recordingEvents = []
-        } else {
-            localStorage.setItem('record' + id(), JSON.stringify(recordingEvents));
-            loadAllRecordingItems()
-        }
-    }
-
-    const loadRecording = (recordingName) => {
-        const events = JSON.parse(localStorage.getItem(recordingName));
-
-        while (events.length) {
-            const event = events.shift()
-
-            console.log(`Scheduling event in ${event.timestamp} ms`)
-            setTimeout(() => {
-                console.log("Loading event playing: " + playing)
-                playing = event.playing;
-                looperPadClickedState = event.looperPadClickedState;
-                togglePlaying(playing)
-                console.log("Event loaded")
-            }, event.timestamp)
-
-        }
-    }
-
-    let recordingItems = []
-    const loadAllRecordingItems = () => {
-
-        recordingItems = Object.keys(localStorage)
-        console.log("Loaded recording items")
-        console.log(recordingItems)
-    }
-
-    loadAllRecordingItems()
 
     setInterval(() => {
         tryResumeAllWaitingKeyPads()
@@ -192,31 +132,15 @@
 
   <Row>
     <Col xs="1">
-      <input on:click={toggleRecording} type="checkbox" name="checkbox" class="checkbox" id="checkbox">
-      <label for="checkbox"></label>
+      <Record/>
     </Col>
 
     <Col xs="1">
-      <Button rectangle small on:click={togglePlaying}>
-        {playing ? "Stop" : "Play"}
-      </Button>
+      <PlayControl/>
     </Col>
 
-    <Col xs="1">
-      <Button rectangle small>
-        Load
-      </Button>
-    </Col>
   </Row>
 
-
-  <Row style="padding: 2%">
-    <Col xs="2">
-      {#each recordingItems as recordingItem}
-        <Button small rectangle on:click={loadRecording.bind(this, recordingItem)}>{recordingItem}</Button>
-      {/each}
-    </Col>
-  </Row>
 
   <Row>
     <Col>
@@ -250,7 +174,6 @@
 
 <style type="text/scss">
   @use 'theme.scss';
-  @import "./styles/record-button.scss";
 
   a {
     text-decoration: none;
@@ -265,7 +188,6 @@
     width: 100%;
     height: 100%;
     border-radius: 6px;
-
   }
 
   :global(body) {
