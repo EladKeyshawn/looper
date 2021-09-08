@@ -54,8 +54,8 @@
     <div class="content {$looperPadClickedState[dataItem.data.looperPad.id] ? 'greyout': ''}"
          style="background-image: linear-gradient({dataItem.data.start}, {dataItem.data.end});"
          on:click={toggleKeyPadClickedState.bind(this, dataItem.data.looperPad.id)}>
-      <h1
-        style="padding-top: 10%; color: black">{$looperPadClickedState[dataItem.data.looperPad.id] ? 'Playing' : ''}</h1>
+      <h2
+        style="padding-top: 10%; color: black">{$looperPadClickedState[dataItem.data.looperPad.id] ? 'Playing' : ''}</h2>
     </div>
   </a>
 
