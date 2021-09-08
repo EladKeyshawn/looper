@@ -3,42 +3,34 @@
     import Grid from "svelte-grid";
     import gridHelp from "svelte-grid/build/helper/index.mjs";
     import {id, randomHexColorCode} from './utils'
+    import {Col, Row} from 'sveltestrap';
 
     export const looperPads = [
         {
-            id: id(),
             audioSrcUrl: "/media/120_future_funk_beats_25.mp3",
         },
         {
-            id: id(),
             audioSrcUrl: "/media/120_stutter_breakbeats_16.mp3",
         },
         {
-            id: id(),
             audioSrcUrl: "/media/Bass Warwick heavy funk groove on E 120 BPM.mp3",
         },
         {
-            id: id(),
             audioSrcUrl: "/media/electric guitar coutry slide 120bpm - B.mp3",
         },
         {
-            id: id(),
             audioSrcUrl: "/media/FUD_120_StompySlosh.mp3",
         },
         {
-            id: id(),
             audioSrcUrl: "/media/GrooveB_120bpm_Tanggu.mp3",
         },
         {
-            id: id(),
             audioSrcUrl: "/media/MazePolitics_120_Perc.mp3",
         },
         {
-            id: id(),
             audioSrcUrl: "/media/PAS3GROOVE1.03B.mp3",
         },
         {
-            id: id(),
             audioSrcUrl: "/media/SilentStar_120_Em_OrganSynth.mp3",
         },
 
@@ -53,7 +45,10 @@
     let recordingEvents = null
     let recordingStart = 0
 
-    for (const pad of looperPads) {
+
+    for (const looperIndex in looperPads) {
+        looperPads[looperIndex].id = looperIndex
+        const pad = looperPads[looperIndex];
         looperPadClickedState[pad.id] = false
         looperKeyPausedState[pad.id] = true
     }
@@ -106,8 +101,9 @@
         }
     }
 
-    export const togglePlaying = () => {
-        playing = !playing;
+    export const togglePlaying = (value) => {
+        console.log("toggling playing")
+        playing = value instanceof Boolean? value : !playing;
         recordSnapshot()
         if (!playing) {
             pauseAll()
@@ -136,22 +132,38 @@
             recordingStart = performance.now()
             recordingEvents = []
         } else {
-            localStorage.setItem('record', JSON.stringify(recordingEvents));
+            localStorage.setItem('record' + id(), JSON.stringify(recordingEvents));
+            loadAllRecordingItems()
         }
     }
 
-    const loadRecording = () => {
-        const events = JSON.parse(localStorage.getItem('record'));
-        const start = performance.now()
+    const loadRecording = (recordingName) => {
+        const events = JSON.parse(localStorage.getItem(recordingName));
 
         while (events.length) {
-            if (events[0].timestamp >= (performance.now() - start)) {
-                const event = events.shift()
-                console.log("load event")
-                console.log(event)
-            }
+            const event = events.shift()
+
+            console.log(`Scheduling event in ${event.timestamp} ms`)
+            setTimeout(() => {
+                console.log("Loading event playing: " + playing)
+                playing = event.playing;
+                looperPadClickedState = event.looperPadClickedState;
+                togglePlaying(playing)
+                console.log("Event loaded")
+            }, event.timestamp)
+
         }
     }
+
+    let recordingItems = []
+    const loadAllRecordingItems = () => {
+
+        recordingItems = Object.keys(localStorage)
+        console.log("Loaded recording items")
+        console.log(recordingItems)
+    }
+
+    loadAllRecordingItems()
 
     setInterval(() => {
         tryResumeAllWaitingKeyPads()
@@ -178,53 +190,60 @@
 
 <main>
 
+  <Row>
+    <Col xs="1">
+      <input on:click={toggleRecording} type="checkbox" name="checkbox" class="checkbox" id="checkbox">
+      <label for="checkbox"></label>
+    </Col>
 
-  <div class="container">
-    <div class="keypads">
-      <Grid bind:items {cols} rowHeight={50} let:dataItem fillSpace={true}>
+    <Col xs="1">
+      <Button rectangle small on:click={togglePlaying}>
+        {playing ? "Stop" : "Play"}
+      </Button>
+    </Col>
 
-        <audio loop
-               bind:this={looperKeyAudioState[dataItem.data.looperPad.id]}
-               bind:paused={looperKeyPausedState[dataItem.data.looperPad.id]}
-               src={dataItem.data.looperPad.audioSrcUrl}
-        >
-        </audio>
-
-        <div class="content {looperPadClickedState[dataItem.data.looperPad.id] ? 'greyout': ''}"
-             on:click={onLooperKeyClicked.bind(this,dataItem.data.looperPad.id )}
-             style="background-image: linear-gradient({dataItem.data.start}, {dataItem.data.end});">
-          <h1 style="padding-top: 20%">{looperPadClickedState[dataItem.data.looperPad.id] ? 'Playing' : ''}</h1>
-        </div>
-
-      </Grid>
-    </div>
-    <div class="controls">
+    <Col xs="1">
+      <Button rectangle small>
+        Load
+      </Button>
+    </Col>
+  </Row>
 
 
-      <div class="record">
-        <input on:click={toggleRecording} type="checkbox" id="btn"/>
-        <label for="btn"></label>
-        <div class="time">
-          <div class="h_m"></div>
-          <div class="s_ms"></div>
-        </div>
+  <Row style="padding: 2%">
+    <Col xs="2">
+      {#each recordingItems as recordingItem}
+        <Button small rectangle on:click={loadRecording.bind(this, recordingItem)}>{recordingItem}</Button>
+      {/each}
+    </Col>
+  </Row>
 
+  <Row>
+    <Col>
+      <div style="max-width: 1100px; width: 100%;">
+        <Grid bind:items {cols} rowHeight={50} let:dataItem fillSpace={true}>
+
+          <audio loop
+                 bind:this={looperKeyAudioState[dataItem.data.looperPad.id]}
+                 bind:paused={looperKeyPausedState[dataItem.data.looperPad.id]}
+                 src={dataItem.data.looperPad.audioSrcUrl}
+          >
+          </audio>
+
+          <a href="#">
+            <div class="content {looperPadClickedState[dataItem.data.looperPad.id] ? 'greyout': ''}"
+                 on:click={onLooperKeyClicked.bind(this,dataItem.data.looperPad.id )}
+                 style="background-image: linear-gradient({dataItem.data.start}, {dataItem.data.end});">
+              <h1
+                style="padding-top: 10%; color: black">{looperPadClickedState[dataItem.data.looperPad.id] ? 'Playing' : ''}</h1>
+            </div>
+          </a>
+
+        </Grid>
       </div>
-      <div class="play" style="margin-left: 120px">
-        <Button rectangle small on:click={togglePlaying}>
-          {playing ? "Stop" : "Play"}
-        </Button>
-      </div>
 
-      <div class="load" style="margin-left: 20px">
-        <Button rectangle small on:click={loadRecording}>
-          Load
-        </Button>
-      </div>
-
-
-    </div>
-  </div>
+    </Col>
+  </Row>
 
 
 </main>
@@ -233,41 +252,8 @@
   @use 'theme.scss';
   @import "./styles/record-button.scss";
 
-  .container {
-    display: grid;
-    grid-template-columns: 0.1fr 4.3fr 0.1fr;
-    grid-template-rows: 0.3fr 1.7fr 1fr;
-    gap: 0px 0px;
-    grid-auto-flow: row;
-    grid-template-areas:
-    ". controls ."
-    ". keypads ."
-    ". . .";
-  }
-
-  .keypads {
-    grid-area: keypads;
-  }
-
-  .controls {
-    display: grid;
-    grid-template-columns: 0.2fr 0.2fr 0.3fr 2fr;
-    grid-template-rows: 1fr 1.4fr 0.6fr;
-    gap: 0px 0px;
-    grid-auto-flow: row;
-    grid-area: controls;
-  }
-
-  .play {
-    grid-area: 2 / 1 / 3 / 3;
-  }
-
-  .record {
-    grid-area: 2 / 2 / 3 / 3;
-  }
-
-  .load {
-    grid-area: 2 / 3 / 3 / 4;
+  a {
+    text-decoration: none;
   }
 
 
@@ -279,6 +265,7 @@
     width: 100%;
     height: 100%;
     border-radius: 6px;
+
   }
 
   :global(body) {
